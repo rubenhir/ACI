@@ -160,7 +160,8 @@ class AciMo:
 
     def _create_intf_prof(self, config):
 
-        logger1.warning('Creating interface profile {0} with interface {1}, interface description {2} and policy group {3}'.format(config['interface_profile'], config['physical_interface'], config['interface_description'], config['interface_pgr']))
+        already_attached = False
+        logger1.warning('Creating interface profile {0} with interface {1}, interface description {2} and linked to policy group {3}'.format(config['interface_profile'], config['physical_interface'], config['interface_description'], config['interface_pgr']))
 
         port_name = config['physical_interface'].split('/')[0] + '-' + config['physical_interface'].split('/')[1]
         port_nbr = config['physical_interface'].split('/')[1]
@@ -169,34 +170,54 @@ class AciMo:
         infraInfra = cobra.model.infra.Infra(polUni)
 
         infraAccPortP = cobra.model.infra.AccPortP(infraInfra, name=config['interface_profile'])
-        infraHPortS = cobra.model.infra.HPortS(infraAccPortP, type='range', name=port_name,
-                                               descr=config['interface_description'])
+        infraHPortS = cobra.model.infra.HPortS(infraAccPortP, type='range', name=port_name, descr=config['interface_description'])
         infraRsAccBaseGrp = cobra.model.infra.RsAccBaseGrp(infraHPortS, fexId='101', tDn=config['interface_pgr_dn'])
-        infraPortBlk = cobra.model.infra.PortBlk(infraHPortS, name='block2', descr='', fromPort=port_nbr, fromCard='1',
-                                                 toPort=port_nbr, toCard='1')
+        infraPortBlk = cobra.model.infra.PortBlk(infraHPortS, name='block2', descr='', fromPort=port_nbr, fromCard='1', toPort=port_nbr, toCard='1')
 
         config['interface_profile_dn'] = infraAccPortP.dn
 
-        logger1.debug(toXMLStr(infraInfra))
-        c = cobra.mit.request.ConfigRequest()
-        c.addMo(infraInfra)
-        self._md.commit(c)
+        for selector in self._md.lookupByClass('infra.HPortS', infraAccPortP.dn):
+            for block in self._md.lookupByClass('infra.PortBlk', selector.dn):
+                if block.fromPort <= port_nbr and block.toPort >= port_nbr:
+                    already_attached = True
+                    break
+
+        if already_attached:
+            logger1.warning('Interface Profile {0} already has port {1}'.format(config['interface_profile'], config['physical_interface']))
+
+        else:
+            logger1.debug(toXMLStr(infraInfra))
+            c = cobra.mit.request.ConfigRequest()
+            c.addMo(infraInfra)
+            self._md.commit(c)
 
         return config
 
 
     def _attach_intf_prof(self, config):
 
-        polUni = cobra.model.pol.Uni('')
-        infraInfra = cobra.model.infra.Infra(polUni)
+        already_attached = False
+        for rs in self._md.lookupByClass('infra.RsAccPortP'):
+            if rs.tDn == config['interface_profile_dn']:
+                already_attached = True
+                break
 
-        infraNodeP = cobra.model.infra.NodeP(infraInfra, name=config['switch_profile'], descr='')
-        infraRsAccPortP = cobra.model.infra.RsAccPortP(infraNodeP, tDn=config['interface_profile_dn'])
+        if already_attached:
+            logger1.warning('Interface Profile {0} already attached to a switch profile. Skipping...'.format(config['interface_profile']))
 
-        logger1.debug(toXMLStr(infraInfra))
-        c = cobra.mit.request.ConfigRequest()
-        c.addMo(infraInfra)
-        self._md.commit(c)
+        else:
+            polUni = cobra.model.pol.Uni('')
+            infraInfra = cobra.model.infra.Infra(polUni)
+
+            infraNodeP = cobra.model.infra.NodeP(infraInfra, name=config['switch_profile'], descr='')
+            infraRsAccPortP = cobra.model.infra.RsAccPortP(infraNodeP, tDn=config['interface_profile_dn'])
+
+            logger1.debug(toXMLStr(infraInfra))
+            c = cobra.mit.request.ConfigRequest()
+            c.addMo(infraInfra)
+            self._md.commit(c)
+
+        return config
 
 
     def __call__(self, config):
