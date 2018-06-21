@@ -1,0 +1,68 @@
+multipod:
+  community: extended:as2-nn4:5:16
+  subnets:
+    - 192.168.0.0/24
+  dataplane_tep:
+    - pod-id: 1
+      ip: 172.18.2.1
+    - pod-id: 2
+      ip: 172.18.2.2
+  ospf:
+    area_id: 0
+    type: 'regular'
+
+pods:
+  - id: 1
+    tep: 10.0.0.0/16
+    spines:
+      - id: 211
+        name: pod1-spine1
+        rid: 172.16.0.201
+        intf:
+          - id: 1/1
+            ip: 192.168.0.1/30
+          - id: 1/2
+            ip: 192.168.0.5/30
+
+      - id: 212
+        name: pod1-spine2
+        rid: 172.16.0.202
+        intf:
+          - id: 1/1
+            ip: 192.168.0.9/30
+          - id: 1/2
+            ip: 192.168.0.10/30
+
+  - id: 2
+    tep: 10.1.0.0/16
+    spines:
+      - id: 221
+        name: pod2-spine1
+        rid: 172.16.0.211
+        sn: FDO21170V7T
+        intf:
+          - id: 1/1
+            ip: 192.168.0.13/30
+          - id: 1/2
+            ip: 192.168.0.17/30
+
+      - id: 222
+        name: pod2-spine2
+        rid: 172.16.0.212
+        sn: FDO21170V7T
+        intf:
+          - id: 1/1
+            ip: 192.168.0.21/30
+          - id: 1/2
+            ip: 192.168.0.22/30
+
+      - id: 223
+        name: pod2-spine3
+        rid: 172.16.0.212
+        sn: FDO21170V7U
+        intf:
+          - id: 1/1
+            ip: 192.168.0.21/30
+          - id: 1/2
+            ip: 192.168.0.22/30
+
