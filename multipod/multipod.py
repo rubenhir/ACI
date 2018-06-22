@@ -13,6 +13,7 @@ import cobra.model.fvns
 import cobra.model.fv
 import cobra.model.l3ext
 import cobra.model.ospf
+import cobra.model.bgp
 import cobra.model.config
 import argparse
 
@@ -113,6 +114,7 @@ class AciMo:
         topMo = cobra.model.pol.Uni('')
         fvTenant = cobra.model.fv.Tenant(topMo, name='infra')
         l3extOut = cobra.model.l3ext.Out(fvTenant, name=self._config.object_name['l3out'])
+        bgpExtP = cobra.model.bgp.ExtP(l3extOut, nameAlias='', descr='')
         ospfExtP = cobra.model.ospf.ExtP(l3extOut, areaCtrl='redistribute,summary', areaId=self._config.ospf['area_id'], areaType=self._config.ospf['type'], areaCost='1')
         l3extRsEctx = cobra.model.l3ext.RsEctx(l3extOut, tnFvCtxName='overlay-1')
         l3extRsL3DomAtt = cobra.model.l3ext.RsL3DomAtt(l3extOut, tDn='uni/l3dom-' + self._config.object_name['domain'])
