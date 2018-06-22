@@ -13,6 +13,8 @@ import cobra.model.fvns
 import cobra.model.fv
 import cobra.model.l3ext
 import cobra.model.ospf
+import cobra.model.config
+import argparse
 
 class AciMo:
     def __init__(self, url, username, password, config, secure=False, timeout=60):
@@ -29,8 +31,7 @@ class AciMo:
         self._md = cobra.mit.access.MoDirectory(ls)
         self._md.login()
 
-
-    def create_pod(self):
+    def _create_pod(self):
 
         existing_pod_id = [int(pod.podId) for pod in self._md.lookupByClass('fabricSetupP')]
 
@@ -52,7 +53,7 @@ class AciMo:
                 self._md.commit(c)
 
 
-    def create_spine(self):
+    def _create_spine(self):
 
         existing_spine_id = [int(id.nodeId) for id in self._md.lookupByClass('fabricNodeIdentP')]
 
@@ -81,7 +82,7 @@ class AciMo:
                     self._md.commit(c)
 
 
-    def create_external_connection_profile(self):
+    def _create_external_connection_profile(self):
 
         logger1.warning('Creating external connectivity profile')
 
@@ -105,22 +106,22 @@ class AciMo:
         self._md.commit(c)
 
 
-    def create_l3_out(self):
+    def _create_l3_out(self):
 
-        logger1.warning('Provisining L3Out {0}'.format(self._config.policy_name['l3out']))
+        logger1.warning('Provisining L3Out {0}'.format(self._config.object_name['l3out']))
 
         topMo = cobra.model.pol.Uni('')
         fvTenant = cobra.model.fv.Tenant(topMo, name='infra')
-        l3extOut = cobra.model.l3ext.Out(fvTenant, name=self._config.policy_name['l3out'])
+        l3extOut = cobra.model.l3ext.Out(fvTenant, name=self._config.object_name['l3out'])
         ospfExtP = cobra.model.ospf.ExtP(l3extOut, areaCtrl='redistribute,summary', areaId=self._config.ospf['area_id'], areaType=self._config.ospf['type'], areaCost='1')
         l3extRsEctx = cobra.model.l3ext.RsEctx(l3extOut, tnFvCtxName='overlay-1')
-        l3extRsL3DomAtt = cobra.model.l3ext.RsL3DomAtt(l3extOut, tDn='uni/l3dom-' + self._config.policy_name['domain'])
+        l3extRsL3DomAtt = cobra.model.l3ext.RsL3DomAtt(l3extOut, tDn='uni/l3dom-' + self._config.object_name['domain'])
         l3extLNodeP = cobra.model.l3ext.LNodeP(l3extOut, name='Spines')
 
-        l3extLIfP = cobra.model.l3ext.LIfP(l3extLNodeP, name='Interfaces')
+        l3extLIfP = cobra.model.l3ext.LIfP(l3extLNodeP, name='SpinesInterfaces')
         ospfIfP = cobra.model.ospf.IfP(l3extLIfP, authKeyId='1', authType='none')
-        ospfIfPol = cobra.model.ospf.IfPol(fvTenant, nwT='p2p', ownerKey='', name='ospf_policy', ctrl='advert-subnet,bfd')
-        ospfRsIfPol = cobra.model.ospf.RsIfPol(ospfIfP, tnOspfIfPolName='ospf_interface_policy')
+        ospfIfPol = cobra.model.ospf.IfPol(fvTenant, nwT='p2p', name=self._config.object_name['ospf'], ctrl='advert-subnet,bfd')
+        ospfRsIfPol = cobra.model.ospf.RsIfPol(ospfIfP, tnOspfIfPolName=self._config.object_name['ospf'])
 
         for pod in self._config.pod_list:
             id = pod['id']
@@ -130,10 +131,10 @@ class AciMo:
                 l3extRsNodeL3OutAtt = cobra.model.l3ext.RsNodeL3OutAtt(l3extLNodeP, rtrIdLoopBack='yes', rtrId=spine['rid'], tDn=tDn)
 
                 for intf in spine['intf']:
-                    tDn = 'topology/pod-' + str(id) + '/node-' + str(spine['id']) + '/pathep-[eth' + str(intf['id'] + ']')
+                    tDn = 'topology/pod-' + str(id) + '/paths-' + str(spine['id']) + '/pathep-[eth' + str(intf['id'] + ']')
                     l3extRsPathL3OutAtt = cobra.model.l3ext.RsPathL3OutAtt(l3extLIfP, ifInstT='sub-interface', addr=intf['ip'], encap='vlan-4', tDn=tDn)
 
-        l3extInstP = cobra.model.l3ext.InstP(l3extOut, matchT='AtleastOne', name='ipnInstP')
+        l3extInstP = cobra.model.l3ext.InstP(l3extOut, matchT='AtleastOne', name=self._config.object_name['l3out_external_net'])
 
         logger1.debug(toXMLStr(topMo))
         c = cobra.mit.request.ConfigRequest()
@@ -141,29 +142,29 @@ class AciMo:
         self._md.commit(c)
 
 
-    def create_access_policies(self):
+    def _create_access_policies(self):
 
         polUni = cobra.model.pol.Uni('')
         infraInfra = cobra.model.infra.Infra(polUni)
         infraFuncP = cobra.model.infra.FuncP(infraInfra)
 
-        logger1.warning('Provisioning vlan pool {0}'.format(self._config.policy_name['vlan_pool']))
-        fvnsVlanInstP = cobra.model.fvns.VlanInstP(infraInfra, name=self._config.policy_name['vlan_pool'], allocMode='static')
+        logger1.warning('Provisioning vlan pool {0}'.format(self._config.object_name['vlan_pool']))
+        fvnsVlanInstP = cobra.model.fvns.VlanInstP(infraInfra, name=self._config.object_name['vlan_pool'], allocMode='static')
         fvnsEncapBlk = cobra.model.fvns.EncapBlk(fvnsVlanInstP, from_='vlan-4', role='external', allocMode='inherit', to='vlan-4')
         logger1.debug(toXMLStr(fvnsVlanInstP))
 
-        logger1.warning('Provisioning domain {0}'.format(self._config.policy_name['domain']))
-        l3extDomP = cobra.model.l3ext.DomP(polUni, name=self._config.policy_name['domain'])
+        logger1.warning('Provisioning domain {0}'.format(self._config.object_name['domain']))
+        l3extDomP = cobra.model.l3ext.DomP(polUni, name=self._config.object_name['domain'])
         infraRsVlanNs = cobra.model.infra.RsVlanNs(l3extDomP, tDn=fvnsVlanInstP.dn)
         logger1.debug(toXMLStr(l3extDomP))
 
-        logger1.warning('Provisioning aep {0}'.format(self._config.policy_name['aep']))
-        infraAttEntityP = cobra.model.infra.AttEntityP(infraInfra, name=self._config.policy_name['aep'])
+        logger1.warning('Provisioning aep {0}'.format(self._config.object_name['aep']))
+        infraAttEntityP = cobra.model.infra.AttEntityP(infraInfra, name=self._config.object_name['aep'])
         infraRsDomP = cobra.model.infra.RsDomP(infraAttEntityP, tDn=l3extDomP.dn)
         logger1.debug(toXMLStr(infraAttEntityP))
 
-        logger1.warning('Provisining policy-group {0}'.format(self._config.policy_name['pgr']))
-        infraSpAccPortGrp = cobra.model.infra.SpAccPortGrp(infraFuncP, name=self._config.policy_name['pgr'])
+        logger1.warning('Provisining policy-group {0}'.format(self._config.object_name['pgr']))
+        infraSpAccPortGrp = cobra.model.infra.SpAccPortGrp(infraFuncP, name=self._config.object_name['pgr'])
         infraRsAttEntP = cobra.model.infra.RsAttEntP(infraSpAccPortGrp, tDn=infraAttEntityP.dn)
         logger1.debug(toXMLStr(infraSpAccPortGrp))
 
@@ -191,6 +192,14 @@ class AciMo:
         c.addMo(polUni)
         self._md.commit(c)
 
+    def __call__(self):
+        self._create_pod()
+        self._create_spine()
+        self._create_external_connection_profile()
+        self._create_access_policies()
+        self._create_l3_out()
+
+
 
 class Configuration:
     def __init__(self, filename):
@@ -199,7 +208,7 @@ class Configuration:
         with open(filename, 'r') as yaml_file:
             logger1.debug('Loading configuration')
             self._config = yaml.load(yaml_file)
-            logger1.debug('Configuraiton loaded')
+            logger1.debug('Configuration loaded')
 
     @property
     def pod_list(self):
@@ -210,8 +219,8 @@ class Configuration:
         return self._config['multipod']
 
     @property
-    def policy_name(self):
-        return self._config['multipod']['policy_name']
+    def object_name(self):
+        return self._config['multipod']['object_name']
 
     @property
     def ospf(self):
@@ -219,14 +228,17 @@ class Configuration:
 
 
 def main():
-    Cfg = Configuration('config.yml')
-    ACI = AciMo(url='https://10.32.72.31', username='admin', password='ADVISE4ever!', config=Cfg)
-    ACI.create_pod()
-    ACI.create_spine()
-    ACI.create_external_connection_profile()
-    ACI.create_access_policies()
-    ACI.create_l3_out()
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', action='store', dest='config_file', help='yaml config file')
+    parser.add_argument('-c', action='store', dest='url', help='APIC url')
+    parser.add_argument('-u', action='store', dest='user', help='APIC User')
+    parser.add_argument('-p', action='store', dest='password', help='APIC Password')
+    parser_result = parser.parse_args()
+
+    Cfg = Configuration(parser_result.config_file)
+    ACI = AciMo(url=parser_result.url, username=parser_result.user, password=parser_result.password, config=Cfg)
+    ACI()
 
 if __name__ == '__main__':
     logger1 = logging.getLogger("__main__")
