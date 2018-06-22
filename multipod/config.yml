@@ -10,6 +10,13 @@ multipod:
   ospf:
     area_id: 0
     type: 'regular'
+  policy_name:
+    l3out: MULTIPOD-l3out
+    vlan_pool: MULTIPOD-pol
+    domain: MULTIPOD-dom
+    aep: MULTIPOD-aep
+    pgr: MULTIPOD-grp
+    intf: MULTIPOD-intf
 
 pods:
   - id: 1
