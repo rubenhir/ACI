@@ -244,5 +244,5 @@ def main():
 
 if __name__ == '__main__':
     logger1 = logging.getLogger("__main__")
-    logging.basicConfig(level=logging.DEBUG, format='=%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.WARNING, format='=%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     main()

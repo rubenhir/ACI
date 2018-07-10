@@ -1,0 +1,61 @@
+all_routers:
+  features:
+    - ospf
+    - pim
+    - udld
+    - lacp
+    - lldp
+    - bfd
+  pim:
+    rp: 172.18.1.22
+    group-list:
+      - 225.0.0.0/8
+      - 239.0.0.0/8
+  ospf:
+    id: 1
+    area: 0
+    network_type: point-to-point
+    bfd: on
+
+
+routers:
+  10.32.72.21:
+    hostname: ipn1
+    ospf:
+      rid: 172.18.1.1
+    interfaces:
+      all:
+        pim: sparse-mode
+      Loopback0:
+        ip: 172.18.1.21/30
+      Ethernet1/10.4:
+        ip: 172.18.0.1/30
+        description: to spine 1
+        ospf_cost: 10
+        dhcp_relay:
+          - 172.16.0.1
+          - 172.16.0.2
+          - 172.16.0.3
+      Ethernet1/11.4:
+        ip: 172.18.0.5/30
+        description: to spine 2
+        ospf_cost: 10
+        dhcp_relay:
+          - 172.16.0.1
+          - 172.16.0.2
+          - 172.16.0.3
+      Ethernet1/12:
+        po: 2
+      Ethernet1/13:
+        po: 2
+      Ethernet1/14:
+        po: 1
+      Ethernet1/15:
+        po: 1
+      Port-channel1:
+        ip: 172.18.0.17/30
+      Port-channel2:
+        ip: 172.18.0.21/30
+
+
+
