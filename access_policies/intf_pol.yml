@@ -1,0 +1,12 @@
+---
+- lacp/MODE-ACTIVE:
+    ctrl: fast-sel-hot-stdby,graceful-conv,susp-individual
+    mode: active
+- lacp/MODE-ON:
+    ctrl: fast-sel-hot-stdby,graceful-conv,susp-individual
+    mode: 'off'
+- lldp/LLDP-OFF:
+    adminTxSt: disabled
+    adminRxSt: disabled
+...
+

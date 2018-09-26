@@ -142,51 +142,38 @@ class AciMo:
             infraAccGrp = cobra.model.infra.AccPortGrp(infraFuncP, name=config['interface_pgr'])
 
         config['interface_pgr_dn'] = infraAccGrp.dn
-        infraRsAttEntP = cobra.model.infra.RsAttEntP(infraAccGrp, tDn='uni/infra/attentp-' + config['aep'])
-
-
-        if not self._md.lookupByDn(infraAccGrp.dn):
-            logger1.critical('Interface Policy Group {0} missing...'.format(config['interface_pgr']))
-
-
-        # Relationship objects
 
         infraRsAttEntP = cobra.model.infra.RsAttEntP(infraAccGrp, tDn='uni/infra/attentp-' + config['aep'])
-
-        if not self._md.lookupByDn(infraRsAttEntP.dn) or infraRsAttEntP.tDn != self._md.lookupByDn(infraRsAttEntP.dn).tDn:
-            logger1.critical('tDn {0} for Policy Group {1} incorrect or missing'.format(infraRsAttEntP.tDn, config['interface_pgr']))
 
         if config['physical_interface_speed'] == '1G':
             infraRsHIfPol = cobra.model.infra.RsHIfPol(infraAccGrp, tnFabricHIfPolName='1G')
 
-            if not self._md.lookupByDn(infraRsHIfPol.dn) or infraRsHIfPol.tnFabricHIfPolName != self._md.lookupByDn(infraRsHIfPol.dn).tnFabricHIfPolName:
-                logger1.critical('Link layer policy {0} doesnt match'.format(infraRsHIfPol.dn))
-
-        if config['physical_interface_speed'] == '100M':
+        elif config['physical_interface_speed'] == '100M':
             infraRsHIfPol = cobra.model.infra.RsHIfPol(infraAccGrp, tnFabricHIfPolName='1M')
 
-            if not self._md.lookupByDn(infraRsHIfPol.dn) or infraRsHIfPol.tnFabricHIfPolName != self._md.lookupByDn(infraRsHIfPol.dn).tnFabricHIfPolName:
-                logger1.critical('Link layer policy {0} doesnt match'.format(infraRsHIfPol.dn))
-
-
-
-        '''
-        if self._md.lookupByDn(infraAccGrp.dn):
-            logger1.warning('Interface Policy Group {0} already exit. Skipping...'.format(config['interface_pgr']))
-
         else:
-            logger1.debug(toXMLStr(infraFuncP))
-            c = cobra.mit.request.ConfigRequest()
-            c.addMo(infraFuncP)
-            self._md.commit(c)
-        '''
+            infraRsHIfPol = cobra.model.infra.RsHIfPol(infraAccGrp, tnFabricHIfPolName='')
+
+
+        #
+        # Validation
+        #
+
+        # Checking that the policy group exist
+        if not self._md.lookupByDn(infraAccGrp.dn):
+            logger1.critical('Interface Policy Group {0} missing...'.format(config['interface_pgr']))
+
+        # Checking that the policy group is linked to the correct aep
+        if not self._md.lookupByDn(infraRsAttEntP.dn) or infraRsAttEntP.tDn != self._md.lookupByDn(infraRsAttEntP.dn).tDn:
+            logger1.critical('tDn {0} for Policy Group {1} incorrect or missing'.format(infraRsAttEntP.tDn, config['interface_pgr']))
+
+        if not self._md.lookupByDn(infraRsHIfPol.dn) or infraRsHIfPol.tnFabricHIfPolName != self._md.lookupByDn(infraRsHIfPol.dn).tnFabricHIfPolName:
+           logger1.critical('Link layer policy {0} doesnt match'.format(infraRsHIfPol.dn))
 
         return config
 
 
     def _create_intf_prof(self, config):
-
-        already_attached = False
 
         logger1.debug('Crafting interface profile {0} with interface {1}, interface description {2} and linked to policy group {3}'.format(config['interface_profile'], config['physical_interface'], config['interface_description'], config['interface_pgr']))
 
@@ -203,6 +190,11 @@ class AciMo:
 
         config['interface_profile_dn'] = infraAccPortP.dn
 
+
+        #
+        # Validation
+        #
+
         if not self._md.lookupByDn(infraAccPortP.dn):
             logger1.critical('Interface Profile {0} missing...'.format(config['interface_profile']))
 
@@ -211,24 +203,6 @@ class AciMo:
 
         if not self._md.lookupByDn(infraRsAccBaseGrp.dn) or infraRsAccBaseGrp.tDn != self._md.lookupByDn(infraRsAccBaseGrp.dn).tDn:
             logger1.critical('{0} linked to the wrong pgr'.format(infraHPortS.dn))
-
-        '''
-        for selector in self._md.lookupByClass('infra.HPortS', infraAccPortP.dn):
-            for block in self._md.lookupByClass('infra.PortBlk', selector.dn):
-                if block.fromPort <= port_nbr and block.toPort >= port_nbr:
-                    already_attached = True
-                    break
-
-        if already_attached:
-            logger1.warning('Interface Profile {0} already has port {1}'.format(config['interface_profile'], config['physical_interface']))
-
-        else:
-
-            logger1.debug(toXMLStr(infraInfra))
-            c = cobra.mit.request.ConfigRequest()
-            c.addMo(infraInfra)
-            self._md.commit(c) 
-        '''
 
         return config
 
@@ -247,31 +221,6 @@ class AciMo:
 
         if not self._md.lookupByDn(infraRsAccPortP.dn):
             logger1.critical('Rs {1} for Switch profile {0} missing'.format(infraNodeP.name, infraRsAccPortP.dn ))
-
-
-        '''
-        already_attached = False
-        for rs in self._md.lookupByClass('infra.RsAccPortP'):
-            if rs.tDn == config['interface_profile_dn']:
-                already_attached = True
-                break
-
-        if already_attached:
-            logger1.warning('Interface Profile {0} already attached to a switch profile. Skipping...'.format(config['interface_profile']))
-
-        else:
-            polUni = cobra.model.pol.Uni('')
-            infraInfra = cobra.model.infra.Infra(polUni)
-
-            infraNodeP = cobra.model.infra.NodeP(infraInfra, name=config['switch_profile'], descr='')
-            infraRsAccPortP = cobra.model.infra.RsAccPortP(infraNodeP, tDn=config['interface_profile_dn'])
-
-            logger1.debug(toXMLStr(infraInfra))
-            c = cobra.mit.request.ConfigRequest()
-            c.addMo(infraInfra)
-            self._md.commit(c)
-            
-        '''
 
         return config
 
