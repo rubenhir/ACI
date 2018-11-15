@@ -118,7 +118,7 @@ def csv_parser(fd, md):
             create_epg(md, line)
 
         else:
-            logger1.debug('Skipping header line')
+            logger1.debug('Skipping CSV header')
 
 
 def main():
