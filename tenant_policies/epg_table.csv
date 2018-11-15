@@ -1,0 +1,10 @@
+Tenant,Application Profile,Consumer Contract,Provier Contract,EPG Name,BD Name,BD GW IP,VRF Name
+tenant1,ap1,permit_any1,permit_any1,lb_sync_epg,lb_sync_bd,,vrf1
+tenant1,ap1,permit_any1,permit_any1,lb_sync_epg2,lb_sync_bd2,,vrf1
+tenant1,ap1,permit_any1,permit_any1,fw_sync_epg,fw_sync_bd,,vrf1
+tenant1,ap1,permit_any1,permit_any1,fw_sync_epg2,fw_sync_bd2,,vrf1
+tenant1,ap1,permit_any1,permit_any1,server_epg1,server_bd1,10.14.240.1/24,vrf1
+tenant1,ap1,permit_any1,permit_any1,server_epg2,server_bd1,,vrf1
+tenant1,ap1,permit_any1,permit_any1,server_epg3,server_bd2,10.14.242.1/24,vrf1
+tenant1,ap1,permit_any1,permit_any1,server_epg4,server_bd3,10.14.243.1/24,vrf1
+tenant1,ap1,permit_any1,permit_any1,server_epg5,server_bd3,,vrf1

@@ -7,8 +7,6 @@ import cobra.model.vns
 import cobra.model.vz
 from cobra.internal.codec.xmlcodec import toXMLStr
 import requests.packages.urllib3
-from os import listdir, getcwd
-from os.path import isfile, join
 import csv
 import re
 import logging
@@ -38,7 +36,7 @@ def create_bd(md, line):
     _subnet = line[6]
     _vrf = line[7]
 
-    logger1.warning("Crafing request for BD: {0}".format(_bd))
+    logger1.warning("Crafting request for BD: {0}".format(_bd))
 
     if _subnet != '':
         _unkMcastAct = 'flood'
@@ -64,11 +62,14 @@ def create_bd(md, line):
     if _subnet != '':
         fvSubnet = cobra.model.fv.Subnet(fvBD, name='', descr='', ctrl='', ip=_subnet, preferred='no', scope='public', virtual='no')
 
-    logger1.debug(toXMLStr(fvTenant))
+    if md.lookupByDn(fvBD.dn):
+        logger1.warning('BD {0} already exit. Skipping...'.format(_bd))
 
-    c = cobra.mit.request.ConfigRequest()
-    c.addMo(fvTenant)
-    md.commit(c)
+    else:
+        logger1.debug(toXMLStr(fvTenant))
+        c = cobra.mit.request.ConfigRequest()
+        c.addMo(fvTenant)
+        md.commit(c)
 
 
 def create_epg(md, line ):
@@ -82,7 +83,7 @@ def create_epg(md, line ):
     _subnet = line[6]
     _vrf = line[7]
 
-    logger1.warning("Crafing request for EGP: {0}".format(_epg))
+    logger1.warning("Crafting request for EGP: {0}".format(_epg))
 
     polUni = cobra.model.pol.Uni('')
     fvTenant = cobra.model.fv.Tenant(polUni, _tenant)
@@ -93,11 +94,15 @@ def create_epg(md, line ):
     fvRsBd = cobra.model.fv.RsBd(fvAEPg, tnFvBDName=_bd)
     fvRsProv = cobra.model.fv.RsProv(fvAEPg, tnVzBrCPName=_prov_contract, matchT='AtleastOne', prio='unspecified')
 
-    logger1.debug(toXMLStr(fvAp))
+    if md.lookupByDn(fvAEPg.dn):
+        logger1.warning('EPG {0} already exit. Skipping...'.format(_epg))
 
-    c = cobra.mit.request.ConfigRequest()
-    c.addMo(fvAp)
-    md.commit(c)
+    else:
+
+       logger1.debug(toXMLStr(fvAp))
+       c = cobra.mit.request.ConfigRequest()
+       c.addMo(fvAp)
+       md.commit(c)
 
 
 def csv_parser(fd, md):
@@ -114,7 +119,6 @@ def csv_parser(fd, md):
 
         else:
             logger1.debug('Skipping header line')
-
 
 
 def main():
@@ -137,7 +141,6 @@ def main():
 
     else:
         logger1.critical('Invalid argument provided')
-
 
 
 if __name__ == '__main__':
