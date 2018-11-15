@@ -42,6 +42,20 @@ class ConfigParser:
                 result['pgr_description'] = line[7]
                 result['device_name'] = line[8]
 
+                # Conversion rule
+                if re.match('leaf[0-9]*-[0-9]*', line[0]) and re.match('LACP_PO', line[6]):
+                    result['pgr_type'] = 'vPC_LACP'
+
+                if re.match('10(D)', line[11]):
+                    result['physical_interface'] = '10G'
+
+                if re.match('1000(D)', line[11]):
+                    result['physical_interface'] = '1G'
+
+                if re.match('100(D)', line[11]):
+                    result['physical_interface'] = '100M'
+
+
                 yield (result)
 
             else:
