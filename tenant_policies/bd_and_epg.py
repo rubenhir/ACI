@@ -132,7 +132,6 @@ def main():
 
         md = connect_aci(url=parser_result.url, username=parser_result.username, password=parser_result.password)
 
-        logger1.warning('Opening file {0}'.format(parser_result.config_file))
         with open(parser_result.config_file) as fd:
             csv_parser(fd, md)
 
