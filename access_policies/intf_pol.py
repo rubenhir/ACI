@@ -5,6 +5,7 @@ import cobra.model.infra
 import cobra.model.lldp
 import cobra.model.pol
 import cobra.model.lacp
+import cobra.model.fabric
 import logging
 import yaml
 import argparse
@@ -12,61 +13,37 @@ from cobra.internal.codec.xmlcodec import toXMLStr
 import requests.packages.urllib3
 
 
-class Configuration:
-    def __init__(self, filename):
-        self._config = list()
+def connect_aci(url, username, password):
 
-        with open(filename, 'r') as yaml_file:
-            logger1.debug('Loading configuration')
-            self._config = yaml.load(yaml_file)
-            logger1.debug('Configuration loaded')
+    logger1.warning('Connecting to APIC with {0} with username {1}'.format(url, username))
 
-    def __iter__(self):
-        for pol in self._config:
-            yield pol
+    requests.packages.urllib3.disable_warnings()
+    ls = cobra.mit.session.LoginSession(url, username, password, secure=False, timeout=60)
+    md = cobra.mit.access.MoDirectory(ls)
+    md.login()
+
+    return md
 
 
-class AciMo:
-    def __init__(self, url, username, password, secure=False, timeout=60):
-        self._url = url
-        self._username = username
-        self._password = password
-        self._secure = secure
-        self._timeout = timeout
+def create_policy(md, pol):
 
-        requests.packages.urllib3.disable_warnings()
+    name = pol.keys()[0]
+    fct = 'cobra.model.' + pol.values()[0]['type']
+    attributes = pol.values()[0]
+    attributes.pop('type')
 
-        ls = cobra.mit.session.LoginSession(self._url, self._username, self._password, secure=self._secure, timeout=self._timeout)
-        self._md = cobra.mit.access.MoDirectory(ls)
-        self._md.login()
+    polUni = cobra.model.pol.Uni('')
+    infraInfra = cobra.model.infra.Infra(polUni)
+    eval(fct)(infraInfra, name, **attributes)
 
-        self._fct_pt = {
-            'lldp' : cobra.model.lldp.IfPol,
-            'lacp' : cobra.model.lacp.LagPol
-        }
+    logger1.warning('Committing policy {0} of type {1} with properties {2}'.format(name, fct, attributes))
+    logger1.debug(toXMLStr(infraInfra))
 
+    logger1.debug(toXMLStr(infraInfra))
+    c = cobra.mit.request.ConfigRequest()
+    c.addMo(infraInfra)
+    md.commit(c)
 
-    def apply(self, pol):
-        name = pol.keys()[0].split("/")[1]
-        type = pol.keys()[0].split("/")[0]
-        props = pol.values()[0]
-
-        polUni = cobra.model.pol.Uni('')
-        infraInfra = cobra.model.infra.Infra(polUni)
-        self._fct_pt[type](infraInfra, name, **props)
-
-        logger1.warning('Comiting policy {0} of type {1} with properties {2}'.format(name, type, props))
-        logger1.debug(toXMLStr(infraInfra))
-
-        try:
-
-            new_config = cobra.mit.request.ConfigRequest()
-            new_config.addMo(infraInfra)
-            self._md.commit(new_config)
-
-        except Exception as e:
-            logger1.critical('Error while comiting policy {0}'.format(name))
-            logger1.critical(e)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -76,15 +53,17 @@ def main():
     parser.add_argument('-p', action='store', dest='password', help='APIC Password')
     parser_result = parser.parse_args()
 
-    apic1 = AciMo(parser_result.url, parser_result.user, parser_result.password)
+    with open(parser_result.config_file, 'r') as yaml_file:
+        logger1.debug('Loading configuration')
+        config = yaml.load(yaml_file)
 
-    policies = Configuration(parser_result.config_file)
+    md = connect_aci(parser_result.url, parser_result.user, parser_result.password)
 
-    for pol in policies:
-        apic1.apply(pol)
+    for pol in config:
+        create_policy(md, pol)
 
 
 if __name__ == '__main__':
     logger1 = logging.getLogger("__main__")
-    logging.basicConfig(level=logging.DEBUG, format='=%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.WARNING, format='=%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     main()

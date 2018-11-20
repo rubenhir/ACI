@@ -1,12 +1,34 @@
 ---
-- lacp/MODE-ACTIVE:
+- MODE-ACTIVE:
+    type: lacp.LagPol
     ctrl: fast-sel-hot-stdby,graceful-conv,susp-individual
     mode: active
-- lacp/MODE-ON:
+- MODE-ON:
+    type: lacp.LagPol
     ctrl: fast-sel-hot-stdby,graceful-conv,susp-individual
     mode: 'off'
-- lldp/LLDP-OFF:
+- LLDP-OFF:
+    type: lldp.IfPol
     adminTxSt: disabled
     adminRxSt: disabled
+- LLDP-ON:
+    type: lldp.IfPol
+    adminTxSt: enabled
+    adminRxSt: enabled
+- 100M:
+    type: fabric.HIfPol
+    autoNeg: 'on'
+    speed: 100M
+    linkDebounce: 100
+- 1G:
+    type: fabric.HIfPol
+    autoNeg: 'on'
+    speed: 1G
+    linkDebounce: 100
+- 10G:
+    type: fabric.HIfPol
+    autoNeg: 'on'
+    speed: inherit
+    linkDebounce: 100
 ...
 
