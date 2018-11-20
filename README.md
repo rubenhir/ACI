@@ -1,5 +1,12 @@
 # Access Policies
 
+The access policies directory includes the scripts that helps automating the provisioning of the fabric access policies.  
+
+## intf_pol.py
+
+
+
+## leaf_prof_and_intf_pgr.py
 
 
 
@@ -37,7 +44,7 @@ optional arguments:
   -u USERNAME     Username to login to APIC
   -p PASSWORD     Password to login to APIC
   
-bd_and_epg.py -c bd_and_epg.csv -u admin -p password -s https://apic1  
+bd_and_epg.py -c bd_and_epg.csv -u admin -p myPassword -s https://apic1  
 ```
 
 
