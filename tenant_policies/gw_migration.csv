@@ -1,0 +1,4 @@
+Tenant,BD Name,BD GW IP,DHCP Relay,To Be Migrated
+tenant1,server_bd1,10.14.240.1/24,DHCP-POL,Y
+tenant1,server_bd2,10.14.242.1/24,DHCP-POL,Y
+tenant1,server_bd3,10.14.243.1/24,DHCP-POL,Y
