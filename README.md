@@ -36,6 +36,8 @@ optional arguments:
   -s URL          APIC URL
   -u USERNAME     Username to login to APIC
   -p PASSWORD     Password to login to APIC
+  
+bd_and_epg.py -c bd_and_epg.csv -u admin -p password -s https://apic1  
 ```
 
 
