@@ -43,6 +43,7 @@ bd_and_epg.py -c bd_and_epg.csv -u admin -p password -s https://apic1
 
 ## gw_migration.py
 The purpose of this script is to convert an L2 BD into L3 BD.  
+
 It has been developed for the migration of a legacy environment (based on standalone switches) to ACI where VLAN’s are first extended and later on SVI moved to ACI.  
 
 It takes of the following, according to a CSV configuration file (see gw_migration.csv):  
