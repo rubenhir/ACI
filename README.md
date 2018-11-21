@@ -4,7 +4,7 @@ The access policies directory includes the scripts that helps automating the pro
 
 ## intf_pol.py
 
-
+This script provisions interface policies such as LACP, CDP, LLDP or interface speeds according to a YAML configuration file. 
 
 ## leaf_prof_and_intf_pgr.py
 
